@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>마크다운 메모장</title>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --border: #e0e0e0;
+      --header-bg: #1e1e2e;
+      --header-text: #cdd6f4;
+      --accent: #89b4fa;
+      --accent-hover: #74c7ec;
+      --text: #313244;
+      --text-muted: #7f849c;
+      --editor-bg: #1e1e2e;
+      --editor-text: #cdd6f4;
+      --editor-caret: #cdd6f4;
+      --divider: #45475a;
+      --reset-bg: #f38ba8;
+      --reset-hover: #eba0ac;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 52px;
+      background: var(--header-bg);
+      flex-shrink: 0;
+      gap: 12px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      font-size: 20px;
+      color: var(--accent);
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--header-text);
+      letter-spacing: 0.3px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .saved-indicator {
+      font-size: 12px;
+      color: var(--text-muted);
+      transition: opacity 0.3s;
+    }
+
+    .saved-indicator.visible {
+      color: #a6e3a1;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .btn-reset {
+      background: var(--reset-bg);
+      color: #1e1e2e;
+    }
+
+    .btn-reset:hover {
+      background: var(--reset-hover);
+    }
+
+    /* ── Pane labels ── */
+    .pane-labels {
+      display: flex;
+      background: var(--header-bg);
+      border-top: 1px solid var(--divider);
+      flex-shrink: 0;
+    }
+
+    .pane-label {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 5px 0;
+      color: var(--text-muted);
+    }
+
+    .pane-label + .pane-label {
+      border-left: 1px solid var(--divider);
+    }
+
+    /* ── Split layout ── */
+    .split {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .pane + .pane {
+      border-left: 2px solid var(--border);
+    }
+
+    /* ── Editor ── */
+    #editor {
+      flex: 1;
+      resize: none;
+      border: none;
+      outline: none;
+      padding: 24px;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      background: var(--editor-bg);
+      color: var(--editor-text);
+      caret-color: var(--editor-caret);
+      tab-size: 2;
+    }
+
+    #editor::placeholder {
+      color: var(--text-muted);
+      opacity: 0.6;
+    }
+
+    /* ── Preview ── */
+    #preview {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 32px;
+      background: var(--surface);
+      line-height: 1.75;
+    }
+
+    /* ── Markdown preview styles ── */
+    #preview h1, #preview h2, #preview h3,
+    #preview h4, #preview h5, #preview h6 {
+      font-weight: 700;
+      line-height: 1.3;
+      margin-top: 1.4em;
+      margin-bottom: 0.5em;
+      color: #1a1a2e;
+    }
+
+    #preview h1 { font-size: 2em; border-bottom: 2px solid var(--border); padding-bottom: 0.3em; }
+    #preview h2 { font-size: 1.5em; border-bottom: 1px solid var(--border); padding-bottom: 0.2em; }
+    #preview h3 { font-size: 1.25em; }
+    #preview h4 { font-size: 1.1em; }
+    #preview h5 { font-size: 1em; }
+    #preview h6 { font-size: 0.9em; color: var(--text-muted); }
+
+    #preview p {
+      margin-bottom: 1em;
+    }
+
+    #preview a {
+      color: #4a90d9;
+      text-decoration: none;
+    }
+
+    #preview a:hover {
+      text-decoration: underline;
+    }
+
+    #preview strong { font-weight: 700; }
+    #preview em { font-style: italic; }
+
+    #preview del {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    #preview code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.875em;
+      background: #f0f0f7;
+      color: #d63384;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    #preview pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      padding: 16px 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-bottom: 1em;
+    }
+
+    #preview pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+      font-size: 13px;
+    }
+
+    #preview blockquote {
+      border-left: 4px solid var(--accent);
+      margin: 0 0 1em 0;
+      padding: 8px 16px;
+      background: #f0f4ff;
+      border-radius: 0 6px 6px 0;
+      color: #555;
+    }
+
+    #preview blockquote p { margin-bottom: 0; }
+
+    #preview ul, #preview ol {
+      padding-left: 1.8em;
+      margin-bottom: 1em;
+    }
+
+    #preview li {
+      margin-bottom: 0.3em;
+    }
+
+    #preview li > ul, #preview li > ol {
+      margin-top: 0.3em;
+      margin-bottom: 0;
+    }
+
+    #preview hr {
+      border: none;
+      border-top: 2px solid var(--border);
+      margin: 1.5em 0;
+    }
+
+    #preview table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 1em;
+      font-size: 14px;
+    }
+
+    #preview th, #preview td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    #preview th {
+      background: #f5f5ff;
+      font-weight: 600;
+    }
+
+    #preview tr:nth-child(even) td {
+      background: #fafafa;
+    }
+
+    #preview img {
+      max-width: 100%;
+      border-radius: 6px;
+    }
+
+    /* Task list */
+    #preview input[type="checkbox"] {
+      margin-right: 6px;
+      accent-color: var(--accent);
+    }
+
+    /* Empty preview placeholder */
+    .preview-placeholder {
+      color: var(--text-muted);
+      font-style: italic;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+
+    /* ── Scrollbars ── */
+    #preview::-webkit-scrollbar,
+    #editor::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #preview::-webkit-scrollbar-track { background: transparent; }
+    #preview::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    #editor::-webkit-scrollbar-track { background: transparent; }
+    #editor::-webkit-scrollbar-thumb { background: var(--divider); border-radius: 3px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .split { flex-direction: column; }
+      .pane + .pane { border-left: none; border-top: 2px solid var(--border); }
+      .pane-label + .pane-label { border-left: 1px solid var(--divider); }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="header-left">
+        <span class="logo">&#9998;</span>
+        <h1>마크다운 메모장</h1>
+      </div>
+      <div class="header-actions">
+        <span class="saved-indicator" id="savedIndicator">저장됨</span>
+        <button class="btn-reset" id="btnReset">초기화</button>
+      </div>
+    </header>
+
+    <div class="pane-labels">
+      <div class="pane-label">편집기</div>
+      <div class="pane-label">미리보기</div>
+    </div>
+
+    <div class="split">
+      <div class="pane">
+        <textarea
+          id="editor"
+          placeholder="마크다운을 입력하세요...&#10;&#10;# 제목&#10;**굵게**, *기울임*, `코드`&#10;- 목록 항목"
+          spellcheck="false"
+        ></textarea>
+      </div>
+      <div class="pane">
+        <div id="preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'markdown-memo-content';
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+    const btnReset = document.getElementById('btnReset');
+    const savedIndicator = document.getElementById('savedIndicator');
+
+    /* ── Minimal Markdown parser ── */
+    function parseMarkdown(src) {
+      // Escape HTML
+      function escHtml(str) {
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      // Protect code blocks from inline processing
+      const codeBlocks = [];
+      src = src.replace(/```([\s\S]*?)```/g, (_, code) => {
+        const lang = code.match(/^(\S+)\n/)?.[1] ?? '';
+        const body = escHtml(code.replace(/^\S+\n/, ''));
+        codeBlocks.push(`<pre><code>${body}</code></pre>`);
+        return `\x00CODE${codeBlocks.length - 1}\x00`;
+      });
+
+      // Protect inline code
+      const inlineCodes = [];
+      src = src.replace(/`([^`]+)`/g, (_, code) => {
+        inlineCodes.push(`<code>${escHtml(code)}</code>`);
+        return `\x00ICODE${inlineCodes.length - 1}\x00`;
+      });
+
+      const lines = src.split('\n');
+      let html = '';
+      let i = 0;
+
+      function inlineFormat(text) {
+        // Images
+        text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />');
+        // Links
+        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+        // Bold-italic
+        text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+        // Bold
+        text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+        // Italic
+        text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        text = text.replace(/_(.+?)_/g, '<em>$1</em>');
+        // Strikethrough
+        text = text.replace(/~~(.+?)~~/g, '<del>$1</del>');
+        return text;
+      }
+
+      function processListBlock(lines, start) {
+        // Detect ordered vs unordered
+        const isOrdered = /^\d+\.\s/.test(lines[start]);
+        const tag = isOrdered ? 'ol' : 'ul';
+        let out = `<${tag}>\n`;
+        let j = start;
+        while (j < lines.length) {
+          const line = lines[j];
+          const ulMatch = line.match(/^(\s*)([-*+])\s+(.*)/);
+          const olMatch = line.match(/^(\s*)(\d+)\.\s+(.*)/);
+          const match = ulMatch || olMatch;
+          if (!match) break;
+          const content = match[3];
+          // Task list?
+          const taskMatch = content.match(/^\[([ xX])\]\s+(.*)/);
+          if (taskMatch) {
+            const checked = taskMatch[1].toLowerCase() === 'x' ? ' checked' : '';
+            out += `<li><input type="checkbox"${checked} disabled />${inlineFormat(taskMatch[2])}</li>\n`;
+          } else {
+            out += `<li>${inlineFormat(content)}</li>\n`;
+          }
+          j++;
+        }
+        out += `</${tag}>\n`;
+        return { html: out, end: j };
+      }
+
+      while (i < lines.length) {
+        const line = lines[i];
+
+        // Fenced code block placeholder
+        const cbMatch = line.match(/\x00CODE(\d+)\x00/);
+        if (cbMatch) {
+          html += codeBlocks[+cbMatch[1]] + '\n';
+          i++;
+          continue;
+        }
+
+        // Heading
+        const headMatch = line.match(/^(#{1,6})\s+(.*)/);
+        if (headMatch) {
+          const level = headMatch[1].length;
+          html += `<h${level}>${inlineFormat(headMatch[2])}</h${level}>\n`;
+          i++;
+          continue;
+        }
+
+        // HR
+        if (/^[-*_]{3,}\s*$/.test(line)) {
+          html += '<hr />\n';
+          i++;
+          continue;
+        }
+
+        // Blockquote
+        if (line.startsWith('>')) {
+          let bqContent = '';
+          while (i < lines.length && (lines[i].startsWith('>') || lines[i] === '')) {
+            if (lines[i] === '') {
+              bqContent += '\n';
+            } else {
+              bqContent += lines[i].replace(/^>\s?/, '') + '\n';
+            }
+            i++;
+          }
+          html += `<blockquote><p>${inlineFormat(bqContent.trim())}</p></blockquote>\n`;
+          continue;
+        }
+
+        // Table
+        if (line.includes('|')) {
+          const tableLines = [];
+          let j = i;
+          while (j < lines.length && lines[j].includes('|')) {
+            tableLines.push(lines[j]);
+            j++;
+          }
+          if (tableLines.length >= 2 && /^\|?[\s\-:|]+\|/.test(tableLines[1])) {
+            const headers = tableLines[0].split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+            let tableHtml = '<table>\n<thead><tr>';
+            headers.forEach(h => { tableHtml += `<th>${inlineFormat(h.trim())}</th>`; });
+            tableHtml += '</tr></thead>\n<tbody>\n';
+            for (let r = 2; r < tableLines.length; r++) {
+              const cells = tableLines[r].split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+              tableHtml += '<tr>';
+              cells.forEach(c => { tableHtml += `<td>${inlineFormat(c.trim())}</td>`; });
+              tableHtml += '</tr>\n';
+            }
+            tableHtml += '</tbody></table>\n';
+            html += tableHtml;
+            i = j;
+            continue;
+          }
+        }
+
+        // List
+        if (/^(\s*)([-*+]|\d+\.)\s/.test(line)) {
+          const result = processListBlock(lines, i);
+          html += result.html;
+          i = result.end;
+          continue;
+        }
+
+        // Blank line
+        if (line.trim() === '') {
+          i++;
+          continue;
+        }
+
+        // Paragraph
+        let paraLines = [];
+        while (i < lines.length && lines[i].trim() !== '' && !lines[i].match(/^#{1,6}\s/) && !lines[i].startsWith('>') && !/^(\s*)([-*+]|\d+\.)\s/.test(lines[i]) && !/^[-*_]{3,}\s*$/.test(lines[i])) {
+          if (/\x00CODE\d+\x00/.test(lines[i])) break;
+          if (lines[i].includes('|')) break;
+          paraLines.push(lines[i]);
+          i++;
+        }
+        if (paraLines.length) {
+          html += `<p>${inlineFormat(paraLines.join(' '))}</p>\n`;
+        } else {
+          i++;
+        }
+      }
+
+      // Restore inline code
+      html = html.replace(/\x00ICODE(\d+)\x00/g, (_, idx) => inlineCodes[+idx]);
+
+      return html || '<p class="preview-placeholder">미리보기가 여기에 표시됩니다.</p>';
+    }
+
+    /* ── Save & load ── */
+    let saveTimer = null;
+
+    function saveContent(text) {
+      localStorage.setItem(STORAGE_KEY, text);
+      showSaved();
+    }
+
+    function showSaved() {
+      savedIndicator.textContent = '저장됨 ✓';
+      savedIndicator.classList.add('visible');
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        savedIndicator.classList.remove('visible');
+        savedIndicator.textContent = '저장됨';
+      }, 1500);
+    }
+
+    function loadContent() {
+      return localStorage.getItem(STORAGE_KEY) ?? '';
+    }
+
+    /* ── Render ── */
+    function render(text) {
+      preview.innerHTML = parseMarkdown(text);
+    }
+
+    /* ── Tab key support ── */
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+        editor.selectionStart = editor.selectionEnd = start + 2;
+        // Trigger input event manually
+        editor.dispatchEvent(new Event('input'));
+      }
+    });
+
+    /* ── Input handler ── */
+    let renderTimer = null;
+    editor.addEventListener('input', () => {
+      const text = editor.value;
+      // Debounce render slightly for performance
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(() => render(text), 60);
+      saveContent(text);
+    });
+
+    /* ── Reset ── */
+    btnReset.addEventListener('click', () => {
+      if (!editor.value || confirm('메모 내용을 모두 삭제하시겠습니까?')) {
+        editor.value = '';
+        render('');
+        saveContent('');
+        editor.focus();
+      }
+    });
+
+    /* ── Init ── */
+    const saved = loadContent();
+    editor.value = saved;
+    render(saved);
+    if (!saved) editor.focus();
+  </script>
+</body>
+</html>
