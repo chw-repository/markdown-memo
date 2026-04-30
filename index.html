@@ -149,6 +149,43 @@
       background: rgba(255, 255, 255, 0.1);
     }
 
+    .font-size-group {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .btn-font-size {
+      background: transparent;
+      color: var(--header-text);
+      border: none;
+      border-radius: 0;
+      padding: 4px 9px;
+      line-height: 1;
+      opacity: 0.5;
+    }
+
+    .btn-font-size:hover {
+      background: rgba(255, 255, 255, 0.1);
+      opacity: 0.8;
+    }
+
+    .btn-font-size.active {
+      background: rgba(255, 255, 255, 0.15);
+      opacity: 1;
+      color: var(--accent);
+    }
+
+    .btn-font-size + .btn-font-size {
+      border-left: 1px solid var(--divider);
+    }
+
+    .btn-font-size-sm { font-size: 11px; }
+    .btn-font-size-md { font-size: 13px; }
+    .btn-font-size-lg { font-size: 16px; }
+
     /* ── Pane labels ── */
     .pane-labels {
       display: flex;
@@ -406,6 +443,11 @@
       </div>
       <div class="header-actions">
         <span class="saved-indicator" id="savedIndicator">저장됨</span>
+        <div class="font-size-group" title="글자 크기">
+          <button class="btn-font-size btn-font-size-sm" data-size="small">가</button>
+          <button class="btn-font-size btn-font-size-md" data-size="normal">가</button>
+          <button class="btn-font-size btn-font-size-lg" data-size="large">가</button>
+        </div>
         <button class="btn-theme" id="btnTheme" title="테마 전환">🌙</button>
         <button class="btn-reset" id="btnReset">초기화</button>
       </div>
@@ -437,6 +479,7 @@
   <script>
     const STORAGE_KEY = 'markdown-memo-content';
     const THEME_KEY = 'markdown-memo-theme';
+    const SIZE_KEY = 'markdown-memo-font-size';
     const editor = document.getElementById('editor');
     const preview = document.getElementById('preview');
     const btnReset = document.getElementById('btnReset');
@@ -444,6 +487,25 @@
     const savedIndicator = document.getElementById('savedIndicator');
     const charCount = document.getElementById('charCount');
     const wordCount = document.getElementById('wordCount');
+    const fontSizeBtns = document.querySelectorAll('.btn-font-size');
+
+    /* ── Font size ── */
+    const FONT_SIZES = { small: '12px', normal: '14px', large: '18px' };
+
+    function applyFontSize(size) {
+      editor.style.fontSize = FONT_SIZES[size] ?? FONT_SIZES.normal;
+      fontSizeBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.size === size));
+    }
+
+    fontSizeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const size = btn.dataset.size;
+        applyFontSize(size);
+        localStorage.setItem(SIZE_KEY, size);
+      });
+    });
+
+    applyFontSize(localStorage.getItem(SIZE_KEY) ?? 'normal');
 
     /* ── Stats ── */
     function updateStats(text) {
