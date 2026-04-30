@@ -149,6 +149,43 @@
       background: rgba(255, 255, 255, 0.1);
     }
 
+    .font-size-group {
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--divider);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .btn-font-size {
+      background: transparent;
+      color: var(--header-text);
+      border: none;
+      border-radius: 0;
+      padding: 4px 9px;
+      line-height: 1;
+      opacity: 0.5;
+    }
+
+    .btn-font-size:hover {
+      background: rgba(255, 255, 255, 0.1);
+      opacity: 0.8;
+    }
+
+    .btn-font-size.active {
+      background: rgba(255, 255, 255, 0.15);
+      opacity: 1;
+      color: var(--accent);
+    }
+
+    .btn-font-size + .btn-font-size {
+      border-left: 1px solid var(--divider);
+    }
+
+    .btn-font-size-sm { font-size: 11px; }
+    .btn-font-size-md { font-size: 13px; }
+    .btn-font-size-lg { font-size: 16px; }
+
     /* ── Pane labels ── */
     .pane-labels {
       display: flex;
@@ -389,6 +426,31 @@
       font-weight: 600;
     }
 
+    .status-shortcuts {
+      margin-left: auto;
+      display: flex;
+      gap: 12px;
+    }
+
+    .shortcut-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.2px;
+    }
+
+    .shortcut-hint kbd {
+      display: inline-block;
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--header-text);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--divider);
+      border-radius: 3px;
+      padding: 0px 4px;
+      line-height: 1.6;
+    }
+
     /* ── Preview toolbar ── */
     .preview-toolbar {
       display: flex;
@@ -452,11 +514,16 @@
   <div class="app">
     <header>
       <div class="header-left">
-        <span class="logo">&#9998;</span>
+        <span class="logo">📋</span>
         <h1>마크다운 메모장</h1>
       </div>
       <div class="header-actions">
         <span class="saved-indicator" id="savedIndicator">저장됨</span>
+        <div class="font-size-group" title="글자 크기">
+          <button class="btn-font-size btn-font-size-sm" data-size="small">가</button>
+          <button class="btn-font-size btn-font-size-md" data-size="normal">가</button>
+          <button class="btn-font-size btn-font-size-lg" data-size="large">가</button>
+        </div>
         <button class="btn-theme" id="btnTheme" title="테마 전환">🌙</button>
         <button class="btn-reset" id="btnReset">초기화</button>
       </div>
@@ -487,12 +554,17 @@
     <div class="status-bar">
       <div class="status-item">글자 <span id="charCount">0</span></div>
       <div class="status-item">단어 <span id="wordCount">0</span></div>
+      <div class="status-shortcuts">
+        <span class="shortcut-hint"><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
+        <span class="shortcut-hint"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 실행취소</span>
+      </div>
     </div>
   </div>
 
   <script>
     const STORAGE_KEY = 'markdown-memo-content';
     const THEME_KEY = 'markdown-memo-theme';
+    const SIZE_KEY = 'markdown-memo-font-size';
     const editor = document.getElementById('editor');
     const preview = document.getElementById('preview');
     const btnReset = document.getElementById('btnReset');
@@ -501,6 +573,25 @@
     const savedIndicator = document.getElementById('savedIndicator');
     const charCount = document.getElementById('charCount');
     const wordCount = document.getElementById('wordCount');
+    const fontSizeBtns = document.querySelectorAll('.btn-font-size');
+
+    /* ── Font size ── */
+    const FONT_SIZES = { small: '12px', normal: '14px', large: '18px' };
+
+    function applyFontSize(size) {
+      editor.style.fontSize = FONT_SIZES[size] ?? FONT_SIZES.normal;
+      fontSizeBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.size === size));
+    }
+
+    fontSizeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const size = btn.dataset.size;
+        applyFontSize(size);
+        localStorage.setItem(SIZE_KEY, size);
+      });
+    });
+
+    applyFontSize(localStorage.getItem(SIZE_KEY) ?? 'normal');
 
     /* ── Stats ── */
     function updateStats(text) {
@@ -731,6 +822,14 @@
     function render(text) {
       preview.innerHTML = parseMarkdown(text);
     }
+
+    /* ── Keyboard shortcuts ── */
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveContent(editor.value);
+      }
+    });
 
     /* ── Tab key support ── */
     editor.addEventListener('keydown', (e) => {
