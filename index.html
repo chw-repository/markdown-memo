@@ -389,6 +389,31 @@
       font-weight: 600;
     }
 
+    .status-shortcuts {
+      margin-left: auto;
+      display: flex;
+      gap: 12px;
+    }
+
+    .shortcut-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.2px;
+    }
+
+    .shortcut-hint kbd {
+      display: inline-block;
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--header-text);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--divider);
+      border-radius: 3px;
+      padding: 0px 4px;
+      line-height: 1.6;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 640px) {
       .split { flex-direction: column; }
@@ -431,6 +456,10 @@
     <div class="status-bar">
       <div class="status-item">글자 <span id="charCount">0</span></div>
       <div class="status-item">단어 <span id="wordCount">0</span></div>
+      <div class="status-shortcuts">
+        <span class="shortcut-hint"><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
+        <span class="shortcut-hint"><kbd>Ctrl</kbd>+<kbd>Z</kbd> 실행취소</span>
+      </div>
     </div>
   </div>
 
@@ -674,6 +703,14 @@
     function render(text) {
       preview.innerHTML = parseMarkdown(text);
     }
+
+    /* ── Keyboard shortcuts ── */
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveContent(editor.value);
+      }
+    });
 
     /* ── Tab key support ── */
     editor.addEventListener('keydown', (e) => {
