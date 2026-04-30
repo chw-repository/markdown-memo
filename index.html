@@ -27,6 +27,30 @@
       --divider: #45475a;
       --reset-bg: #f38ba8;
       --reset-hover: #eba0ac;
+      --preview-heading: #1a1a2e;
+      --preview-code-bg: #f0f0f7;
+      --preview-code-text: #d63384;
+      --preview-blockquote-bg: #f0f4ff;
+      --preview-blockquote-text: #555;
+      --preview-th-bg: #f5f5ff;
+      --preview-tr-even-bg: #fafafa;
+    }
+
+    [data-theme="dark"] {
+      --bg: #11111b;
+      --surface: #181825;
+      --border: #313244;
+      --header-bg: #13131f;
+      --text: #cdd6f4;
+      --text-muted: #6c7086;
+      --divider: #313244;
+      --preview-heading: #cdd6f4;
+      --preview-code-bg: #2a2a3e;
+      --preview-code-text: #f38ba8;
+      --preview-blockquote-bg: #1e1e2e;
+      --preview-blockquote-text: #a6adc8;
+      --preview-th-bg: #24243a;
+      --preview-tr-even-bg: #1e1e2e;
     }
 
     html, body {
@@ -111,6 +135,20 @@
       background: var(--reset-hover);
     }
 
+    .btn-theme {
+      background: transparent;
+      border: 1px solid var(--divider);
+      color: var(--header-text);
+      font-size: 16px;
+      padding: 4px 10px;
+      line-height: 1;
+      border-radius: 6px;
+    }
+
+    .btn-theme:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
     /* ── Pane labels ── */
     .pane-labels {
       display: flex;
@@ -189,7 +227,7 @@
       line-height: 1.3;
       margin-top: 1.4em;
       margin-bottom: 0.5em;
-      color: #1a1a2e;
+      color: var(--preview-heading);
     }
 
     #preview h1 { font-size: 2em; border-bottom: 2px solid var(--border); padding-bottom: 0.3em; }
@@ -223,8 +261,8 @@
     #preview code {
       font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 0.875em;
-      background: #f0f0f7;
-      color: #d63384;
+      background: var(--preview-code-bg);
+      color: var(--preview-code-text);
       padding: 2px 6px;
       border-radius: 4px;
     }
@@ -249,9 +287,9 @@
       border-left: 4px solid var(--accent);
       margin: 0 0 1em 0;
       padding: 8px 16px;
-      background: #f0f4ff;
+      background: var(--preview-blockquote-bg);
       border-radius: 0 6px 6px 0;
-      color: #555;
+      color: var(--preview-blockquote-text);
     }
 
     #preview blockquote p { margin-bottom: 0; }
@@ -290,12 +328,12 @@
     }
 
     #preview th {
-      background: #f5f5ff;
+      background: var(--preview-th-bg);
       font-weight: 600;
     }
 
     #preview tr:nth-child(even) td {
-      background: #fafafa;
+      background: var(--preview-tr-even-bg);
     }
 
     #preview img {
@@ -345,6 +383,7 @@
       </div>
       <div class="header-actions">
         <span class="saved-indicator" id="savedIndicator">저장됨</span>
+        <button class="btn-theme" id="btnTheme" title="테마 전환">🌙</button>
         <button class="btn-reset" id="btnReset">초기화</button>
       </div>
     </header>
@@ -370,10 +409,31 @@
 
   <script>
     const STORAGE_KEY = 'markdown-memo-content';
+    const THEME_KEY = 'markdown-memo-theme';
     const editor = document.getElementById('editor');
     const preview = document.getElementById('preview');
     const btnReset = document.getElementById('btnReset');
+    const btnTheme = document.getElementById('btnTheme');
     const savedIndicator = document.getElementById('savedIndicator');
+
+    /* ── Theme ── */
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      btnTheme.textContent = theme === 'dark' ? '☀️' : '🌙';
+      btnTheme.title = theme === 'dark' ? '라이트 모드로 전환' : '다크 모드로 전환';
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') ?? 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      localStorage.setItem(THEME_KEY, next);
+    }
+
+    btnTheme.addEventListener('click', toggleTheme);
+
+    // Load saved theme on startup
+    applyTheme(localStorage.getItem(THEME_KEY) ?? 'light');
 
     /* ── Minimal Markdown parser ── */
     function parseMarkdown(src) {
