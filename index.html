@@ -366,6 +366,29 @@
     #editor::-webkit-scrollbar-track { background: transparent; }
     #editor::-webkit-scrollbar-thumb { background: var(--divider); border-radius: 3px; }
 
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 4px 16px;
+      height: 28px;
+      background: var(--header-bg);
+      border-top: 1px solid var(--divider);
+      flex-shrink: 0;
+    }
+
+    .status-item {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.2px;
+    }
+
+    .status-item span {
+      color: var(--header-text);
+      font-weight: 600;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 640px) {
       .split { flex-direction: column; }
@@ -405,6 +428,10 @@
         <div id="preview"></div>
       </div>
     </div>
+    <div class="status-bar">
+      <div class="status-item">글자 <span id="charCount">0</span></div>
+      <div class="status-item">단어 <span id="wordCount">0</span></div>
+    </div>
   </div>
 
   <script>
@@ -415,6 +442,14 @@
     const btnReset = document.getElementById('btnReset');
     const btnTheme = document.getElementById('btnTheme');
     const savedIndicator = document.getElementById('savedIndicator');
+    const charCount = document.getElementById('charCount');
+    const wordCount = document.getElementById('wordCount');
+
+    /* ── Stats ── */
+    function updateStats(text) {
+      charCount.textContent = text.length.toLocaleString();
+      wordCount.textContent = (text.trim() ? text.trim().split(/\s+/).length : 0).toLocaleString();
+    }
 
     /* ── Theme ── */
     function applyTheme(theme) {
@@ -657,10 +692,10 @@
     let renderTimer = null;
     editor.addEventListener('input', () => {
       const text = editor.value;
-      // Debounce render slightly for performance
       clearTimeout(renderTimer);
       renderTimer = setTimeout(() => render(text), 60);
       saveContent(text);
+      updateStats(text);
     });
 
     /* ── Reset ── */
@@ -669,6 +704,7 @@
         editor.value = '';
         render('');
         saveContent('');
+        updateStats('');
         editor.focus();
       }
     });
@@ -677,6 +713,7 @@
     const saved = loadContent();
     editor.value = saved;
     render(saved);
+    updateStats(saved);
     if (!saved) editor.focus();
   </script>
 </body>
